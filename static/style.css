@@ -1,151 +1,275 @@
-/* ==========================================
-   1. CONFIGURACIÓN GENERAL Y ACCESIBILIDAD
-   ========================================== */
-:root {
-    --bg-color: #f4f7f6;
-    --card-bg: #ffffff;
-    --primary-color: #2c3e50;
-    --accent-color: #16a085;
-    --text-color: #111111; /* Mayor contraste para lectura clara */
-    --border-color: #7f8c8d; /* Bordes más oscuros para distinguirlos bien */
-    --shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
+/* static/style.css */
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 0;
+body { 
+    font-family: Arial, sans-serif; 
+    background-color: #f4f7f6; 
+    margin: 0; 
+    padding: 0; 
+    color: #1a1a1a; 
+    height: 100vh;
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 100vh;
-}
-
-/* ==========================================
-   2. CONTENEDOR AMPLIO
-   ========================================== */
-.container {
-    width: 95%;             
-    max-width: 520px; /* Un poco más ancho para dar respiro a los elementos */
-    background-color: var(--card-bg);
-    padding: 35px;
-    border-radius: 16px;
-    box-shadow: var(--shadow);
+    justify-content: center;
     box-sizing: border-box;
-    margin: 20px auto;
 }
 
-h1 {
-    font-size: 2rem;
-    color: var(--primary-color);
-    text-align: center;
+.container { 
+    width: 95vw;
+    max-width: 1000px;
+    height: 90vh;
+    max-height: 620px;
+    background: white; 
+    padding: 25px; 
+    border-radius: 12px; 
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1); 
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+h2 { 
+    color: #1b3a4b; 
+    text-align: center; 
     margin-top: 0;
-    margin-bottom: 30px;
+    font-size: 1.8em;
+    margin-bottom: 15px;
 }
 
-/* ==========================================
-   3. CAMPOS DE FORMULARIO GRANDES (Fáciles de apuntar)
-   ========================================== */
-.form-group {
-    margin-bottom: 28px; /* Más separación entre campos para evitar clics erróneos */
+.dashboard {
+    display: flex;
+    gap: 25px;
+    flex: 1;
+    min-height: 0;
 }
 
-label {
-    display: block;
-    margin-bottom: 12px;
-    font-weight: 700;
-    color: var(--primary-color);
-    font-size: 1.1rem; /* Texto un poco más grande */
+.col-form {
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-/* Inputs y Selects gigantes (Mínimo 48px de alto reglamentario para accesibilidad) */
-input[type="number"],
-input[type="text"],
-select {
-    width: 100%;
-    height: 55px; /* Altura generosa para que sea una zona de clic enorme */
-    padding: 0 20px;
-    border: 2px solid var(--border-color); /* Borde más grueso y visible */
-    border-radius: 10px;
-    font-size: 1.2rem; /* Números y letras grandes */
-    box-sizing: border-box;
-    background-color: #ffffff;
-    color: #000;
+.col-results {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Super indicador visual cuando el usuario está posicionado en el campo */
-input[type="number"]:focus,
-select:focus {
-    border-color: #2980b9;
-    box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.3); /* Destello azul para saber dónde se está escribiendo */
-    outline: none;
+.form-group { 
+    margin-bottom: 12px; 
 }
 
-/* ==========================================
-   4. BOTÓN GIGANTE (Fácil de presionar)
-   ========================================== */
-button {
-    width: 100%;
-    min-height: 60px; /* Botón muy alto, imposible de fallar al tocarlo */
+label { 
+    display: block; 
+    margin-bottom: 6px; 
+    font-weight: bold; 
+    font-size: 1.1em; 
+}
+
+.input-accessible-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+input[type="text"], input[type="number"] { 
+    width: 100%; 
+    padding: 12px; 
+    border: 3px solid #767676; 
+    border-radius: 8px; 
+    box-sizing: border-box; 
+    font-size: 1.2em; 
+    font-weight: bold;
+    text-align: center;
+}
+
+input:focus {
+    outline: 4px solid #ff9800;
+    outline-offset: 2px;
+}
+
+.btn-stepper {
+    min-width: 50px;
+    height: 50px;
+    font-size: 1.6em;
+    font-weight: bold;
+    background-color: #e0e0e0;
+    border: 3px solid #767676;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-stepper:active { background-color: #bdbdbd; }
+
+.radio-group { display: flex; gap: 15px; }
+
+.radio-label-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border: 3px solid #767676;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #fafafa;
+    font-size: 1.1em;
+}
+
+input[type="radio"] {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.btn-submit { 
+    flex: 2;
+    padding: 15px; 
+    background-color: #0066cc; 
+    border: none; 
+    color: white; 
+    font-size: 1.3em; 
+    font-weight: bold; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+.btn-submit:hover { background-color: #004499; }
+
+.btn-reset {
+    flex: 1;
     padding: 15px;
-    background-color: var(--accent-color);
+    background-color: #767676;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    text-decoration: none;
+    text-align: center;
+}
+.btn-reset:hover { background-color: #555555; }
+
+.results-box {
+    flex: 1;
+    border: 3px dashed #767676;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #fafafa;
+}
+
+.results-active { 
+    background-color: #e8f5e9; 
+    border: 3px solid #2e7d32; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+}
+.results-active h3 { margin-top: 0; color: #2e7d32; font-size: 1.4em; margin-bottom: 5px; }
+.results-active p { margin: 8px 0; font-size: 1.1em; line-height: 1.2; }
+
+.placeholder-text { color: #666; font-size: 1.2em; text-align: center; font-style: italic; }
+.error { background-color: #ffebee; border: 3px solid #c62828; color: #c62828; padding: 15px; border-radius: 8px; font-size: 1.1em; font-weight: bold; }
+
+.btn-modal {
+    width: 100%;
+    padding: 12px;
+    background-color: #2e7d32;
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 1.3rem; /* Texto grande y claro */
+    border-radius: 6px;
+    font-size: 1.1em;
     font-weight: bold;
     cursor: pointer;
-    box-sizing: border-box;
-    margin-top: 15px;
-    box-shadow: 0 4px 10px rgba(22, 160, 133, 0.3);
+    margin-top: 10px;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+}
+.btn-modal:hover { background-color: #1b5e20; }
+
+/* Modal emergente */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5); 
+    align-items: center;
+    justify-content: center;
 }
 
-button:hover {
-    background-color: #117a65;
-}
-
-/* Resonancia visual al presionar el botón */
-button:active {
-    background-color: #0e6251;
-}
-
-/* ==========================================
-   5. RESULTADOS ENORMES Y LIMPIOS
-   ========================================== */
-.resultado {
-    margin-top: 35px;
+.modal-content {
+    background-color: white;
     padding: 25px;
-    background-color: #e8f8f5;
-    border: 2px solid var(--accent-color);
     border-radius: 12px;
-    text-align: center;
+    width: 90%;
+    max-width: 800px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s ease;
 }
 
-.resultado h2 {
-    margin-top: 0;
-    color: var(--primary-color);
-    font-size: 1.4rem;
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 
-.resultado p {
-    font-size: 2rem; /* El resultado final se lee gigante y sin esfuerzo */
-    font-weight: 800;
-    color: #117a65;
-    margin: 15px 0 0 0;
-    word-wrap: break-word;
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
 }
 
-/* ==========================================
-   6. ADAPTACIÓN PARA MÓVILES
-   ========================================== */
-@media (max-width: 600px) {
-    .container {
-        width: 100%;
-        padding: 25px 15px;
-        margin: 0;
-        border-radius: 0; /* Ocupa toda la pantalla en el celular */
-        box-shadow: none;
-    }
+.modal-header h3 { margin: 0; color: #1b3a4b; font-size: 1.5em; }
+
+.close-modal {
+    font-size: 2em;
+    font-weight: bold;
+    color: #767676;
+    cursor: pointer;
+    background: none;
+    border: none;
 }
+.close-modal:hover { color: #000; }
+
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+    font-size: 1.05em;
+}
+
+th, td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+th { background-color: #f4f7f6; color: #1b3a4b; position: sticky; top: 0; font-weight: bold; }
+td:first-child, th:first-child { text-align: center; font-weight: bold; }
+tr:nth-child(even) { background-color: #fafafa; }
+tr:hover { background-color: #f1f8e9; }
