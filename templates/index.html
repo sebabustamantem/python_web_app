@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Interés Compuesto con IPC</title>
-    <!-- Vinculación del código CSS externo -->
+    <title>Calculadora de Interés Compuesto + IPC Acumulado</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h2>Calculadora de Interés Compuesto</h2>
+        <h2>Calculadora de Interés Compuesto e IPC</h2>
         
         <div class="dashboard">
             <!-- COLUMNA IZQUIERDA: FORMULARIO -->
@@ -60,11 +59,13 @@
                         </div>
                     </div>
 
-                    <!-- CAMPO IPC BANCO CENTRAL (NUEVO) -->
+                    <!-- CAMPO IPC ACUMULADO DEL PERIODO -->
                     <div class="form-group">
-                        <label for="fecha_inicio">Mes/Año Inicial (Reajuste IPC Banco Central - Opcional):</label>
+                        <label for="ipc_manual">IPC Acumulado del Periodo (%):</label>
                         <div class="input-accessible-group">
-                            <input type="month" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio if fecha_inicio else '' }}" style="width: 100%; height: 50px; font-size: 1.1rem; padding: 0 12px; border-radius: 8px; border: 2px solid #ccc; box-sizing: border-box;">
+                            <button type="button" class="btn-stepper" onclick="modificarNumero('ipc_manual', -0.1, true)">-</button>
+                            <input type="number" id="ipc_manual" name="ipc_manual" step="0.01" value="{{ ipc_manual }}" placeholder="Ej: 2.5">
+                            <button type="button" class="btn-stepper" onclick="modificarNumero('ipc_manual', 0.1, true)">+</button>
                         </div>
                     </div>
                 </div>
@@ -85,19 +86,25 @@
                     {% else %}
                         <div class="results-box results-active" role="region" aria-live="polite">
                             <div>
-                                <h3>Resultados del Cálculo</h3>
+                                <h3>Resumen del Cálculo</h3>
                                 <p><strong>Monto Inicial:</strong> {{ resultado.monto_inicial }}</p>
-                                <p><strong>Plazo Establecido:</strong> {{ resultado.plazo }}</p>
+                                <p><strong>Plazo:</strong> {{ resultado.plazo }}</p>
                                 <p><strong>Tasa aplicada:</strong> {{ resultado.tasa }}</p>
-                                {% if fecha_inicio %}
-                                <p><strong>Inicio IPC Banco Central:</strong> {{ fecha_inicio }}</p>
-                                {% endif %}
+                                <p><strong>Intereses Generados:</strong> {{ resultado.subtotal_intereses }}</p>
+                                <p><strong>Subtotal (Monto + Interés):</strong> {{ resultado.monto_con_intereses }}</p>
+                                
+                                <hr style="border: 0; border-top: 1px dashed #2e7d32; margin: 8px 0;">
+                                
+                                <p><strong>IPC Acumulado:</strong> {{ resultado.ipc_acumulado }}</p>
+                                <p style="color: #2e7d32;"><strong>+ Reajuste por IPC:</strong> {{ resultado.reajuste_ipc_monto }}</p>
+                                
                                 <hr style="border: 0; border-top: 2px solid #2e7d32; margin: 8px 0;">
-                                <p style="font-size: 1.2em;"><strong>Monto Final Acumulado:</strong> <br>{{ resultado.monto_final }}</p>
-                                <p style="color: #2e7d32; font-size: 1.2em;"><strong>Total Intereses Calculados:</strong> <br>{{ resultado.total_intereses }}</p>
+                                
+                                <p style="font-size: 1.25em;"><strong>Monto Final Total:</strong> <br>{{ resultado.monto_final }}</p>
+                                <p style="color: #2e7d32; font-size: 1.1em;"><strong>Ganancia Total (Interés + IPC):</strong> <br>{{ resultado.total_ganancia }}</p>
                             </div>
                             
-                            <button type="button" class="btn-modal" onclick="abrirModal()">Ver Desglose por Periodo</button>
+                            <button type="button" class="btn-modal" onclick="abrirModal()">Ver Desglose de Intereses</button>
                         </div>
                     {% endif %}
                 {% else %}
@@ -109,12 +116,12 @@
         </div>
     </div>
 
-    <!-- VENTANA MODAL (DESGLOSE PASO A PASO CON COLUMNA IPC) -->
+    <!-- VENTANA MODAL (DESGLOSE DE INTERESES) -->
     {% if resultado and not resultado.error %}
     <div id="modalDesglose" class="modal" role="dialog" aria-modal="true">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Desglose Paso a Paso Proyectado</h3>
+                <h3>Desglose Paso a Paso (Interés Compuesto)</h3>
                 <button type="button" class="close-modal" onclick="cerrarModal()">&times;</button>
             </div>
             <div class="table-container">
@@ -123,10 +130,9 @@
                         <tr>
                             <th>{{ resultado.tipo_periodo }}</th>
                             <th>Saldo Inicial</th>
-                            <th>IPC Aplicado</th>
-                            <th>Interés Calculado</th>
+                            <th>Interés Ganado</th>
                             <th>Interés Acumulado</th>
-                            <th>Monto Final</th>
+                            <th>Saldo (Sin IPC)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -134,10 +140,9 @@
                         <tr>
                             <td>{{ fila.periodo }}</td>
                             <td>{{ fila.capital_inicial }}</td>
-                            <td><strong>{{ fila.ipc_aplicado if fila.ipc_aplicado else '0.0%' }}</strong></td>
                             <td style="color: #2e7d32;">+ {{ fila.interes_ganado }}</td>
                             <td style="color: #1b3a4b;">{{ fila.interes_acumulado }}</td>
-                            <td><strong>{{ fila.saldo_final }}</strong></td>
+                            <td><strong>{{ fila.saldo_pre_ipc }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>
