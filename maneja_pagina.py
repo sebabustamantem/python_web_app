@@ -10,6 +10,12 @@ app = Flask(__name__)
 
 CSV_FILE = "ipc_historico.csv"
 
+# Diccionario para nombres de meses abreviados en español
+MESES_ESP = {
+    1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr", 5: "May", 6: "Jun",
+    7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"
+}
+
 
 class IPCService:
     """Servicio de extracción del porcentaje IPC Mensual desde el SII."""
@@ -189,7 +195,7 @@ def index():
             if monto_inicial <= 0 or total_meses <= 0 or tasa < 0:
                 raise ValueError("Los valores ingresados deben ser mayores a cero.")
 
-            # CÁLCULO AUTOMÁTICO DE FECHAS SEGÚN EL PLAZO
+            # Cálculo automático de fechas según el plazo
             dt_actual = datetime.now()
             dt_inicio = restar_meses(dt_actual, total_meses)
             
@@ -228,8 +234,12 @@ def index():
                 total_intereses += interes_periodo
                 total_reajuste_ipc += reajuste_ipc_periodo
 
+                # Formato en español: "Ene 2026"
+                nombre_mes = MESES_ESP[current_date.month]
+                periodo_espanol = f"{nombre_mes} {current_date.year}"
+
                 tabla_desglose.append({
-                    "periodo": current_date.strftime("%b %Y").capitalize(),
+                    "periodo": periodo_espanol,
                     "capital_inicial": formatear_clp(capital_inicial_periodo),
                     "interes_ganado": formatear_clp(interes_periodo),
                     "monto_mas_interes": formatear_clp(monto_con_interes),
@@ -240,11 +250,14 @@ def index():
 
                 current_date = sumar_un_mes(current_date)
 
+            # Rango en español para la tarjeta de resumen
+            rango_fechas_str = f"{MESES_ESP[dt_inicio.month]} {dt_inicio.year} - {MESES_ESP[dt_actual.month]} {dt_actual.year}"
+
             resultado = {
                 "monto_inicial": formatear_clp(monto_inicial),
                 "plazo": f"{plazo} {tipo_plazo}",
                 "tasa": f"{tasa}% por periodo",
-                "rango_fechas": f"{dt_inicio.strftime('%b %Y').capitalize()} - {dt_actual.strftime('%b %Y').capitalize()}",
+                "rango_fechas": rango_fechas_str,
                 "subtotal_intereses": formatear_clp(total_intereses),
                 "total_reajuste_ipc": formatear_clp(total_reajuste_ipc),
                 "monto_final": formatear_clp(capital_actual),
