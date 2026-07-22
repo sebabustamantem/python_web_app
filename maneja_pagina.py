@@ -1,3 +1,4 @@
+import base64
 import os
 from datetime import datetime
 from typing import Any, Dict, List
@@ -10,7 +11,11 @@ app = Flask(__name__)
 
 CSV_FILE = "ipc_historico.csv"
 
-# Diccionario para nombres de meses abreviados en español
+# Configuración de GitHub desde variables de entorno
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = os.getenv("GITHUB_REPO")  # Ej: "usuario/repositorio"
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
+
 MESES_ESP = {
     1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr", 5: "May", 6: "Jun",
     7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"
@@ -39,36 +44,6 @@ class IPCService:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "es-CL,es;q=0.9,en;q=0.8",
         })
-
-    def fetch_ipc_series(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-        try:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
-        except ValueError as err:
-            raise ValueError(f"Formato de fecha inválido (use YYYY-MM-DD): {err}")
-
-        years = range(start_dt.year, end_dt.year + 1)
-        all_records: List[Dict[str, Any]] = []
-
-        for year in years:
-            records = self._scrape_mensual_ipc(year)
-            all_records.extend(records)
-
-        if not all_records:
-            return []
-
-        df = pd.DataFrame(all_records)
-        mask = (df["fecha_dt"] >= start_dt) & (df["fecha_dt"] <= end_dt)
-        filtered_df = df.loc[mask].sort_values(by="fecha_dt")
-
-        result: List[Dict[str, Any]] = []
-        for _, row in filtered_df.iterrows():
-            result.append({
-                "fecha": row["fecha_dt"].strftime("%Y-%m-%d"),
-                "valor": float(row["valor"]),
-            })
-
-        return result
 
     def _scrape_mensual_ipc(self, year: int) -> List[Dict[str, Any]]:
         url = self.BASE_URL.format(year=year)
@@ -112,8 +87,9 @@ class IPCService:
 
                     try:
                         valor_float = float(clean_val)
+                        fecha_str = f"{year}-{month_num:02d}"
                         records.append({
-                            "fecha_dt": datetime(year, month_num, 1),
+                            "fecha": fecha_str,
                             "valor": valor_float,
                         })
                     except ValueError:
@@ -128,37 +104,111 @@ class IPCService:
 ipc_service = IPCService()
 
 
-def guardar_en_csv(nuevos_registros: List[Dict[str, Any]]) -> None:
-    """Guarda o actualiza la serie de IPC en un archivo CSV local."""
+def cargar_ipc_local() -> Dict[str, float]:
+    """Carga el diccionario { 'YYYY-MM': valor } desde el archivo CSV local si existe."""
+    if os.path.exists(CSV_FILE):
+        try:
+            df = pd.read_csv(CSV_FILE, dtype={"fecha": str})
+            return dict(zip(df["fecha"], df["valor"]))
+        except Exception as e:
+            print(f"[WARN] Error al leer CSV local: {e}")
+    return {}
+
+
+def actualizar_csv_y_github(nuevos_registros: List[Dict[str, Any]]) -> None:
+    """Actualiza el CSV local y, si existen credenciales, realiza un commit a GitHub."""
     if not nuevos_registros:
         return
 
     df_nuevos = pd.DataFrame(nuevos_registros)
 
     if os.path.exists(CSV_FILE):
-        df_existente = pd.read_csv(CSV_FILE)
+        df_existente = pd.read_csv(CSV_FILE, dtype={"fecha": str})
         df_combinado = pd.concat([df_existente, df_nuevos]).drop_duplicates(subset=["fecha"], keep="last")
     else:
         df_combinado = df_nuevos
 
     df_combinado.sort_values(by="fecha", inplace=True)
     df_combinado.to_csv(CSV_FILE, index=False)
+    print(f"[INFO] Archivo {CSV_FILE} actualizado en disco.")
+
+    # Sincronización automática con GitHub via API
+    if GITHUB_TOKEN and GITHUB_REPO:
+        try:
+            url_github = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{CSV_FILE}"
+            headers = {
+                "Authorization": f"token {GITHUB_TOKEN}",
+                "Accept": "application/vnd.github.v3+json",
+            }
+
+            # 1. Obtener el SHA actual del archivo en GitHub
+            res = requests.get(url_github, headers=headers)
+            sha = res.json().get("sha") if res.status_code == 200 else None
+
+            # 2. Codificar el nuevo contenido del CSV en Base64
+            with open(CSV_FILE, "rb") as f:
+                content_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+            data = {
+                "message": "Update ipc_historico.csv con nuevos datos [auto-commit]",
+                "content": content_b64,
+                "branch": GITHUB_BRANCH,
+            }
+            if sha:
+                data["sha"] = sha
+
+            # 3. Hacer el commit vía PUT
+            put_res = requests.put(url_github, headers=headers, json=data)
+            if put_res.status_code in [200, 201]:
+                print("[SUCCESS] ¡CSV actualizado exitosamente en GitHub!")
+            else:
+                print(f"[ERROR] Error actualizando en GitHub: {put_res.status_code} - {put_res.text}")
+
+        except Exception as e:
+            print(f"[WARN] Excepción al sincronizar con GitHub: {e}")
+
+
+def obtener_ipc_meses_requeridos(lista_meses: List[str]) -> Dict[str, float]:
+    """
+    1. Revisa qué meses están en el CSV.
+    2. Si faltan meses, consulta al SII únicamente los años faltantes.
+    3. Guarda los nuevos hallazgos en el CSV y GitHub.
+    """
+    ipc_map = cargar_ipc_local()
+    meses_faltantes = [m for m in lista_meses if m not in ipc_map]
+
+    if not meses_faltantes:
+        print("[CACHE] Todos los meses requeridos se obtuvieron del CSV local.")
+        return ipc_map
+
+    # Identificar los años que requieren consulta al SII
+    anios_faltantes = set(int(m.split("-")[0]) for m in meses_faltantes)
+    nuevos_registros = []
+
+    print(f"[WEB SCRAPING] Faltan meses en caché. Consultando SII para los años: {anios_faltantes}")
+
+    for anio in anios_faltantes:
+        registros_anio = ipc_service._scrape_mensual_ipc(anio)
+        nuevos_registros.extend(registros_anio)
+        for reg in registros_anio:
+            ipc_map[reg["fecha"]] = reg["valor"]
+
+    if nuevos_registros:
+        actualizar_csv_y_github(nuevos_registros)
+
+    return ipc_map
 
 
 def restar_meses(dt: datetime, meses: int) -> datetime:
-    """Resta N meses a un objeto datetime."""
     ano = dt.year
     mes = dt.month - meses
-
     while mes <= 0:
         mes += 12
         ano -= 1
-
     return datetime(ano, mes, 1)
 
 
 def sumar_un_mes(dt: datetime) -> datetime:
-    """Suma exactamente 1 mes a un objeto datetime."""
     nuevo_mes = dt.month % 12 + 1
     nuevo_ano = dt.year + (dt.month // 12)
     return dt.replace(year=nuevo_ano, month=nuevo_mes)
@@ -198,16 +248,16 @@ def index():
             # Cálculo automático de fechas según el plazo
             dt_actual = datetime.now()
             dt_inicio = restar_meses(dt_actual, total_meses)
-            
-            start_date_str = dt_inicio.strftime("%Y-%m-01")
-            end_date_str = dt_actual.strftime("%Y-%m-28")
 
-            # Scraping dinámico desde el SII
-            registros_ipc = ipc_service.fetch_ipc_series(start_date_str, end_date_str)
-            guardar_en_csv(registros_ipc)
+            # Generar lista de strings 'YYYY-MM' requeridos
+            meses_requeridos = []
+            curr = dt_inicio
+            for _ in range(total_meses):
+                meses_requeridos.append(curr.strftime("%Y-%m"))
+                curr = sumar_un_mes(curr)
 
-            # Mapa { "YYYY-MM": valor_ipc }
-            ipc_dict = {reg["fecha"][:7]: reg["valor"] for reg in registros_ipc}
+            # Estrategia CSV / Web Scraping inteligente
+            ipc_dict = obtener_ipc_meses_requeridos(meses_requeridos)
 
             capital_actual = monto_inicial
             total_intereses = 0.0
@@ -223,7 +273,7 @@ def index():
                 interes_periodo = capital_actual * (tasa / 100.0)
                 monto_con_interes = capital_actual + interes_periodo
 
-                # 2. Reajuste por IPC obtenido o 0.0 por defecto
+                # 2. Reajuste por IPC obtenido del CSV/SII (0.0 por defecto si no existe)
                 clave = current_date.strftime("%Y-%m")
                 ipc_porcentaje = ipc_dict.get(clave, 0.0)
 
@@ -234,7 +284,6 @@ def index():
                 total_intereses += interes_periodo
                 total_reajuste_ipc += reajuste_ipc_periodo
 
-                # Formato en español: "Ene 2026"
                 nombre_mes = MESES_ESP[current_date.month]
                 periodo_espanol = f"{nombre_mes} {current_date.year}"
 
@@ -250,7 +299,6 @@ def index():
 
                 current_date = sumar_un_mes(current_date)
 
-            # Rango en español para la tarjeta de resumen
             rango_fechas_str = f"{MESES_ESP[dt_inicio.month]} {dt_inicio.year} - {MESES_ESP[dt_actual.month]} {dt_actual.year}"
 
             resultado = {
