@@ -82,12 +82,12 @@
                                 <p><strong>Periodo Evaluado:</strong> {{ resultado.rango_fechas }}</p>
                                 <p><strong>Tasa aplicada:</strong> {{ resultado.tasa }}</p>
                                 <p><strong>Subtotal Intereses:</strong> {{ resultado.subtotal_intereses }}</p>
-                                <p style="color: #2e7d32;"><strong>+ Total Reajuste IPC (SII):</strong> {{ resultado.total_reajuste_ipc }}</p>
+                                <p style="color: #2e7d32;"><strong>+ Total Reajuste IPC:</strong> {{ resultado.total_reajuste_ipc }}</p>
                                 
                                 <hr style="border: 0; border-top: 2px solid #2e7d32; margin: 8px 0;">
                                 
                                 <p style="font-size: 1.25em;"><strong>Monto Final Total:</strong> <br>{{ resultado.monto_final }}</p>
-                                <p style="color: #2e7d32; font-size: 1.1em;"><strong>Ganancia Total:</strong> <br>{{ resultado.ganancia_total }}</p>
+                                <p style="color: #2e7d32; font-size: 1.1em;"><strong>Intereses Totales Generados:</strong> <br>{{ resultado.ganancia_total }}</p>
                             </div>
                             
                             <button type="button" class="btn-modal" onclick="abrirModal()">Ver Desglose</button>
@@ -107,7 +107,7 @@
     <div id="modalDesglose" class="modal" role="dialog" aria-modal="true">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h3>Desglose Histórico (Interés + Reajuste IPC SII)</h3>
+                <h3>Desglose Histórico (Interés + Reajuste IPC)</h3>
                 <button type="button" class="close-modal" onclick="cerrarModal()">&times;</button>
             </div>
             <div class="table-container">
@@ -118,7 +118,7 @@
                             <th>Saldo Inicial</th>
                             <th>Interés Generado</th>
                             <th>Monto + Interés</th>
-                            <th>IPC (SII)</th>
+                            <th>IPC</th>
                             <th>Reajuste IPC</th>
                             <th>Saldo Final</th>
                         </tr>
